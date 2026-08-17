@@ -11,21 +11,21 @@
       "ECSR": { "$path": "vendor/ECSR/src" },
       "FishingDemo": {
         "$className": "Folder",
-        "Components": { "$path": "demo/Components" },
-        "Systems": { "$path": "demo/Systems" },
-        "Rules": { "$path": "demo/Rules" },
-        "Presentation": { "$path": "demo/Platform/FishingPresentation.luau" }
+        "Components": { "$path": "demo/ECSR/Components" },
+        "Systems": { "$path": "demo/ECSR/Systems" },
+        "Rules": { "$path": "demo/ECSR/Rules" },
+        "Presentation": { "$path": "demo/ECSR/Platform/FishingPresentation.luau" }
       }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
-      "FishingDemoServer": { "$path": "demo/Platform/FishingDemo.server.luau" }
+      "FishingDemoServer": { "$path": "demo/ECSR/Platform/FishingDemo.server.luau" }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
-        "FishingDemoClient": { "$path": "demo/Platform/FishingDemo.client.luau" }
+        "FishingDemoClient": { "$path": "demo/ECSR/Platform/FishingDemo.client.luau" }
       }
     }
   }
