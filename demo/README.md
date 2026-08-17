@@ -2,6 +2,8 @@
 
 这是参考图玩法的可玩纵向切片：港口出航，循海鸟寻找鱼群，用声呐确认位置，选择航线破冰前进，下网捕捞，返港后出售全部渔获，或收藏稀有鱼并自动卖出普通鱼。完成结算后可以开始下一航次；金币与收藏会持续保留。
 
+应用源码统一位于 `demo/ECSR`：`Components / Systems / Rules` 是平台无关的 ECSR 领域层，`Platform` 是同一应用边界内的 Roblox 适配层。`vendor/ECSR` 仍是只读框架依赖。
+
 ## 运行
 
 ```powershell
@@ -22,7 +24,7 @@ rojo serve demo.project.json
 - 顶部目标轨道、资源 HUD、货舱/收藏面板和 7×7 实时小地图共同提示当前目标。
 - 船体、港口、冰面、海鸟、鱼群和海面采用分层程序化造景，并加入航行尾迹、声呐脉冲和破冰碎片。
 - 捕获时逐张揭示鱼种与稀有度，结算时显示金币或收藏奖励，镜头会随航次阶段平滑切换。
-- `Platform/FishingPresentation.luau` 只把服务器发布的只读 Component 快照物化为画面；它不决定流程、价格、概率或结果。
+- `demo/ECSR/Platform/FishingPresentation.luau` 只把服务器发布的只读 Component 快照物化为画面；它不决定流程、价格、概率或结果。
 
 当前版本是无需外部资产即可直接讲解与试玩的展示型纵向切片；美术仍是程序化占位风格，方便后续替换正式模型、材质、音效与特效。
 
@@ -62,7 +64,7 @@ rojo serve demo.project.json
 
 领域作用只物化为框架通用 Effect：`Insert / Remove / Spawn / Despawn / CollectionAdd / CollectionRemove`。Matter 世界仍只由依赖中的 `vendor/ECSR/src/Rules/StateUpdateRule.luau` 写入。
 
-`demo/Platform` 是平台薄层：服务器把 RemoteEvent 变成 Observation，把只读 Component 快照发布给客户端；客户端只负责视觉与输入，不保存权威价格、流程、概率或胜负。
+`demo/ECSR/Platform` 是应用 ECSR 边界内的平台适配层：服务器把 RemoteEvent 变成 Observation，把只读 Component 快照发布给客户端；客户端只负责视觉与输入，不保存权威价格、流程、概率或胜负。适配层归入应用 ECSR 结构，但不进入只读的 `vendor/ECSR` 框架子模块。
 
 ## 验证
 

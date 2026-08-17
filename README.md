@@ -33,14 +33,15 @@ git submodule update --init --recursive
 ./tests/Verify.ps1
 ```
 
-详细玩法、操作与因果闭环见 [`demo/README.md`](demo/README.md)。
+详细玩法、操作与因果闭环见 [`demo/README.md`](demo/README.md)。应用 ECSR 代码统一位于 `demo/ECSR`，平台适配位于 `demo/ECSR/Platform`。
 
 ## 协作边界
 
-- 捕鱼状态只能位于 `demo/Components`。
-- 局部作用只能由 `demo/Systems` 提出 Contribution。
-- 组合、顺序、冲突与状态演化只能由 `demo/Rules` 声明。
-- `demo/Platform` 只负责把输入转换为 Observation，并把只读 Component 快照机械物化为 Roblox 画面。
+- 捕鱼状态只能位于 `demo/ECSR/Components`。
+- 局部作用只能由 `demo/ECSR/Systems` 提出 Contribution。
+- 组合、顺序、冲突与状态演化只能由 `demo/ECSR/Rules` 声明。
+- `demo/ECSR/Platform` 只负责把输入转换为 Observation，并把只读 Component 快照机械物化为 Roblox 画面。
+- `demo/ECSR` 是本应用的 ECSR 边界；其中的 Platform 可以依赖 Roblox，但 Components、Systems、Rules 仍保持平台无关。
 - 不要直接编辑 `vendor/ECSR`；需要升级时，只在独立 PR 中更新子模块指针。
 
 开始开发前请完整阅读 [`AGENTS.md`](AGENTS.md) 和 [`CONTRIBUTING.md`](CONTRIBUTING.md)。

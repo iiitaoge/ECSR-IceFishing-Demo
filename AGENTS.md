@@ -4,11 +4,12 @@
 
 ## 唯一本体
 
-运行时业务对象只有 `Components / Systems / Rules`：
+运行时业务对象只有 `Components / Systems / Rules`；应用的 Roblox 边界适配位于同一 ECSR 应用目录下的 `Platform`：
 
-- `demo/Components` 保存会影响未来的全部捕鱼世界状态。
-- `demo/Systems` 只读取同一份只读快照并产生 Contribution。
-- `demo/Rules` 声明组合、顺序、优先级、冲突、约束与 Effect。
+- `demo/ECSR/Components` 保存会影响未来的全部捕鱼世界状态。
+- `demo/ECSR/Systems` 只读取同一份只读快照并产生 Contribution。
+- `demo/ECSR/Rules` 声明组合、顺序、优先级、冲突、约束与 Effect。
+- `demo/ECSR/Platform` 只把 Roblox 输入/网络转换为 Observation，或把服务器发布的只读快照机械物化为 Roblox 画面。
 
 Entity 只是数字 ID。Matter 是存储底座，Contribution 是瞬时作用值；两者都不是第四种业务本体。
 
@@ -21,10 +22,10 @@ X_t+1   = Rules.Update(X_t, C*)
 ## 权限边界
 
 - 不在业务层创建 Manager、Service、Controller、Store、EventBus 或 Scheduler。
-- `demo/Components / Systems / Rules` 不得依赖 Roblox 平台对象。
+- `demo/ECSR/Components / Systems / Rules` 不得依赖 Roblox 平台对象。
 - System 不得持有 World 或影响未来判断的模块级可变状态。
 - Matter 写入只允许发生在依赖的 `vendor/ECSR/src/Rules/StateUpdateRule.luau`。
-- `demo/Platform` 只形成 Observation 或机械物化服务器发布的只读快照。
+- `demo/ECSR/Platform` 只形成 Observation 或机械物化服务器发布的只读快照；不得决定捕鱼流程、价格、概率或胜负。
 - 不直接编辑 `vendor/ECSR`、`.gitmodules` 或 ECSR 子模块指针；依赖升级必须单独提交并由仓库所有者批准。
 
 ## 修改协议

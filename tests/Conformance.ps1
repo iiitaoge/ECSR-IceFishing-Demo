@@ -12,15 +12,20 @@ if (-not (Test-Path -LiteralPath $EcsrConformance)) {
 & $EcsrConformance
 
 $Demo = Join-Path $Repository "demo"
+$EcsrApp = Join-Path $Demo "ECSR"
+$DemoRoots = @(Get-ChildItem -LiteralPath $Demo -Directory | ForEach-Object Name | Sort-Object)
+if (($DemoRoots -join "|") -ne "ECSR") {
+    Fail "demo may contain only the ECSR application boundary; found $($DemoRoots -join ', ')"
+}
 $ExpectedRoots = @("Components", "Platform", "Rules", "Systems")
-$ActualRoots = @(Get-ChildItem -LiteralPath $Demo -Directory | ForEach-Object Name | Sort-Object)
+$ActualRoots = @(Get-ChildItem -LiteralPath $EcsrApp -Directory | ForEach-Object Name | Sort-Object)
 if (($ActualRoots -join "|") -ne (($ExpectedRoots | Sort-Object) -join "|")) {
-    Fail "demo may contain only Components, Systems, Rules and Platform; found $($ActualRoots -join ', ')"
+    Fail "demo/ECSR may contain only Components, Systems, Rules and Platform; found $($ActualRoots -join ', ')"
 }
 
 $DomainFiles = @(
     foreach ($Root in @("Components", "Systems", "Rules")) {
-        Get-ChildItem -LiteralPath (Join-Path $Demo $Root) -Filter "*.luau" -File -Recurse
+        Get-ChildItem -LiteralPath (Join-Path $EcsrApp $Root) -Filter "*.luau" -File -Recurse
     }
 )
 $WritePattern = '\b(?:self\.)?(?:world|_world):(spawnAt|spawn|insert|remove|despawn|clear|replace|optimizeQueries)\s*\('
@@ -34,8 +39,8 @@ if ($PlatformLeaks.Count -gt 0) {
     Fail "Components/Systems/Rules contain a Roblox platform dependency: $($PlatformLeaks[0].Path):$($PlatformLeaks[0].LineNumber)"
 }
 
-$PresentationPath = Join-Path $Demo "Platform\FishingPresentation.luau"
-$ClientLoaderPath = Join-Path $Demo "Platform\FishingDemo.client.luau"
+$PresentationPath = Join-Path $EcsrApp "Platform\FishingPresentation.luau"
+$ClientLoaderPath = Join-Path $EcsrApp "Platform\FishingDemo.client.luau"
 if (-not (Test-Path -LiteralPath $PresentationPath) -or -not (Test-Path -LiteralPath $ClientLoaderPath)) {
     Fail "presentation module or client loader is missing"
 }
