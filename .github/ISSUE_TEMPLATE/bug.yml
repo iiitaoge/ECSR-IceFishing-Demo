@@ -1,0 +1,24 @@
+name: Bug 报告
+description: 报告可复现的玩法、状态或展示问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 从打开 Demo 开始，列出最短复现路径。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 日志或截图
+      description: 可粘贴 Studio 输出、截图或录屏链接；不要提交密钥或私人信息。

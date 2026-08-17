@@ -1,0 +1,3 @@
+[submodule "vendor/ECSR"]
+	path = vendor/ECSR
+	url = https://github.com/iiitaoge/ECSR.git

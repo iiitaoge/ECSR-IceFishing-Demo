@@ -1,0 +1,32 @@
+{
+  "name": "ECSR Ice Fishing Demo",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Packages": {
+        "$className": "Folder",
+        "Matter": { "$path": "vendor/ECSR/vendor/Matter/lib" }
+      },
+      "ECSR": { "$path": "vendor/ECSR/src" },
+      "FishingDemo": {
+        "$className": "Folder",
+        "Components": { "$path": "demo/Components" },
+        "Systems": { "$path": "demo/Systems" },
+        "Rules": { "$path": "demo/Rules" },
+        "Presentation": { "$path": "demo/Platform/FishingPresentation.luau" }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "FishingDemoServer": { "$path": "demo/Platform/FishingDemo.server.luau" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "FishingDemoClient": { "$path": "demo/Platform/FishingDemo.client.luau" }
+      }
+    }
+  }
+}

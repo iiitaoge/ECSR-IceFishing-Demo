@@ -1,0 +1,31 @@
+name: ECSR Fishing CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Static architecture and Rojo build
+    runs-on: windows-latest
+    steps:
+      - name: Check out Demo and dependencies
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify and build
+        shell: pwsh
+        run: ./tests/Build.ps1
+
+      - name: Upload playable place
+        uses: actions/upload-artifact@v4
+        with:
+          name: fishing-demo
+          path: build/fishing-demo.rbxlx
+          if-no-files-found: error

@@ -1,0 +1,11 @@
+# Architecture and dependency boundaries require the repository owner's review.
+/.github/ @iiitaoge
+/AGENTS.md @iiitaoge
+/.gitmodules @iiitaoge
+/vendor/ECSR @iiitaoge
+/demo.project.json @iiitaoge
+/test.project.json @iiitaoge
+/demo/Components/ @iiitaoge
+/demo/Systems/ @iiitaoge
+/demo/Rules/ @iiitaoge
+/tests/Conformance.ps1 @iiitaoge

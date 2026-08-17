@@ -1,0 +1,27 @@
+name: 玩法或展示提案
+description: 提议一条可验证的捕鱼状态演化或展示改进
+title: "[Proposal] "
+labels:
+  - proposal
+body:
+  - type: textarea
+    id: player_value
+    attributes:
+      label: 玩家价值
+      description: 玩家会看到、理解或操作到什么变化？
+    validations:
+      required: true
+  - type: textarea
+    id: evolution
+    attributes:
+      label: ECSR 因果映射
+      description: 填写 X_t、S_i、⊗、Φ；纯展示改动请说明没有权威状态变化。
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收条件
+      description: 列出可试玩或可自动验证的完成标准。
+    validations:
+      required: true
