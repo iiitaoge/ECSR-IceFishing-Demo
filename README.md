@@ -2,7 +2,7 @@
 
 [![ECSR Fishing CI](https://github.com/iiitaoge/ECSR-IceFishing-Demo/actions/workflows/ci.yml/badge.svg)](https://github.com/iiitaoge/ECSR-IceFishing-Demo/actions/workflows/ci.yml)
 
-一个可展示、可协作的 Roblox 破冰捕鱼纵向切片：循海鸟与声呐定位鱼群，规划航线破冰，下网捕捞，返港出售或收藏稀有鱼。
+一个可展示、可协作的 Roblox 破冰捕鱼纵向切片：雷达指向航区内最近的未发现鱼群，玩家驾驶船破冰探索，进入发现范围后按 E 获取鱼群，返港出售并升级货舱，再开始下一轮。
 
 本仓库只承载捕鱼应用。ECSR 框架以 Git submodule 固定在 [`v0.1.1`](https://github.com/iiitaoge/ECSR/tree/v0.1.1)，协作者不直接修改框架仓库。
 
