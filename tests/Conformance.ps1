@@ -52,7 +52,13 @@ foreach ($Marker in @(
     'MiniMap',
     'CatchReveal',
     'TweenService',
+    'ECSRFishingEffects',
+    'createFishModel',
+    'createCatchHaul',
     'createIceBreakBurst',
+    'createSinkingIce',
+    'createWaterRipple',
+    'createSplashDroplets',
     'showCatchReveal'
 )) {
     if (-not $PresentationText.Contains($Marker)) {

@@ -31,19 +31,19 @@ local COLORS = {
 
 local MODE_NAMES = {
 	Docked = "停靠港口",
-	Searching = "追踪鱼群",
-	AtSchool = "抵达鱼群",
-	ReadyToReturn = "满载待返",
+	Searching = "雷达探索",
+	ReadyToReturn = "准备返港",
 	Returning = "返航中",
 	DockedWithCatch = "港口结算",
 }
 
 local OBJECTIVES = {
 	"01  出航",
-	"02  找线索",
-	"03  破冰",
-	"04  下网",
-	"05  返港结算",
+	"02  雷达寻找",
+	"03  发现鱼群",
+	"04  按 E 获取",
+	"05  回港出售",
+	"06  升级货舱",
 }
 
 local presentation = {
@@ -62,6 +62,14 @@ end
 local scene = Instance.new("Folder")
 scene.Name = "ECSRFishingScene"
 scene.Parent = Workspace
+
+local oldEffects = Workspace:FindFirstChild("ECSRFishingEffects")
+if oldEffects ~= nil then
+	oldEffects:Destroy()
+end
+local effects = Instance.new("Folder")
+effects.Name = "ECSRFishingEffects"
+effects.Parent = Workspace
 
 local function ensureLighting(className: string, name: string, properties)
 	local instance = Lighting:FindFirstChild(name)
@@ -201,7 +209,7 @@ textLabel("Title", "破冰捕鱼", UDim2.fromOffset(18, 28), UDim2.new(1, -36, 0
 local modeLabel = textLabel("Mode", "等待状态", UDim2.fromOffset(20, 65), UDim2.new(1, -40, 0, 18), brand, Enum.Font.GothamMedium, 12)
 modeLabel.TextColor3 = COLORS.muted
 
-local objectiveRail = panel("ObjectiveRail", UDim2.new(0.5, -350, 0, 20), UDim2.fromOffset(700, 52))
+local objectiveRail = panel("ObjectiveRail", UDim2.new(0.5, -425, 0, 20), UDim2.fromOffset(850, 52))
 objectiveRail.BackgroundTransparency = 0.12
 local objectiveLayout = Instance.new("UIListLayout")
 objectiveLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -213,7 +221,7 @@ local objectivePills = {}
 for index, objective in ipairs(OBJECTIVES) do
 	local pill = Instance.new("TextLabel")
 	pill.Name = "Objective" .. tostring(index)
-	pill.Size = UDim2.fromOffset(if index == 5 then 142 else 122, 32)
+	pill.Size = UDim2.fromOffset(if index == 6 then 132 else 112, 32)
 	pill.BackgroundColor3 = Color3.fromRGB(27, 66, 82)
 	pill.BackgroundTransparency = 0.3
 	pill.Font = Enum.Font.GothamBold
@@ -230,8 +238,11 @@ local coinLabel = textLabel("Coins", "金币  0", UDim2.fromOffset(17, 11), UDim
 coinLabel.TextColor3 = COLORS.gold
 local roundLabel = textLabel("Round", "航次  0", UDim2.new(0.5, 5, 0, 11), UDim2.new(0.5, -20, 0, 28), resources, Enum.Font.GothamBold, 14)
 roundLabel.TextXAlignment = Enum.TextXAlignment.Right
-local fuelLabel = textLabel("Fuel", "破冰燃料", UDim2.fromOffset(17, 47), UDim2.new(1, -34, 0, 18), resources, Enum.Font.GothamMedium, 11)
+local fuelLabel = textLabel("Fuel", "破冰燃料", UDim2.fromOffset(17, 47), UDim2.new(0.52, -17, 0, 18), resources, Enum.Font.GothamMedium, 11)
 fuelLabel.TextColor3 = COLORS.muted
+local cargoLevelLabel = textLabel("CargoLevel", "货舱 Lv.0", UDim2.new(0.52, 0, 0, 47), UDim2.new(0.48, -17, 0, 18), resources, Enum.Font.GothamBold, 11)
+cargoLevelLabel.TextXAlignment = Enum.TextXAlignment.Right
+cargoLevelLabel.TextColor3 = COLORS.cyan
 local fuelTrack = Instance.new("Frame")
 fuelTrack.Position = UDim2.fromOffset(17, 70)
 fuelTrack.Size = UDim2.new(1, -34, 0, 9)
@@ -247,7 +258,7 @@ gradient(fuelFill, COLORS.cyan, COLORS.green)
 
 local cargoPanel = panel("Cargo", UDim2.fromOffset(22, 128), UDim2.fromOffset(360, 165))
 textLabel("CargoTitle", "本航次渔获", UDim2.fromOffset(17, 10), UDim2.new(0.5, -20, 0, 22), cargoPanel, Enum.Font.GothamBold, 13)
-local cargoCount = textLabel("CargoCount", "0 / 6", UDim2.new(0.5, 0, 0, 10), UDim2.new(0.5, -17, 0, 22), cargoPanel, Enum.Font.GothamBold, 13)
+local cargoCount = textLabel("CargoCount", "0 / 7", UDim2.new(0.5, 0, 0, 10), UDim2.new(0.5, -17, 0, 22), cargoPanel, Enum.Font.GothamBold, 13)
 cargoCount.TextXAlignment = Enum.TextXAlignment.Right
 cargoCount.TextColor3 = COLORS.cyan
 local holdLabel = textLabel("Hold", "渔舱为空", UDim2.fromOffset(17, 40), UDim2.new(1, -34, 0, 52), cargoPanel, Enum.Font.Gotham, 12)
@@ -268,7 +279,7 @@ collectionLabel.TextColor3 = COLORS.muted
 
 local mapPanel = panel("MiniMap", UDim2.new(1, -250, 0, 128), UDim2.fromOffset(228, 255))
 textLabel("MapTitle", "航区态势", UDim2.fromOffset(15, 10), UDim2.new(1, -30, 0, 24), mapPanel, Enum.Font.GothamBold, 13)
-local mapHint = textLabel("MapHint", "海鸟是线索 · 绿色为目标", UDim2.fromOffset(15, 32), UDim2.new(1, -30, 0, 18), mapPanel, Enum.Font.Gotham, 10)
+local mapHint = textLabel("MapHint", "雷达锁定未发现鱼群 · 彩色为已发现", UDim2.fromOffset(15, 32), UDim2.new(1, -30, 0, 18), mapPanel, Enum.Font.Gotham, 10)
 mapHint.TextColor3 = COLORS.muted
 local mapGrid = Instance.new("Frame")
 mapGrid.Name = "Grid"
@@ -279,6 +290,53 @@ mapGrid.BackgroundTransparency = 0.22
 mapGrid.ClipsDescendants = true
 mapGrid.Parent = mapPanel
 rounded(mapGrid, 10)
+
+local radarPanel = panel("Radar", UDim2.new(1, -250, 1, -320), UDim2.fromOffset(228, 160))
+local radarTitle = textLabel("RadarTitle", "雷达 · 未发现鱼群", UDim2.fromOffset(15, 10), UDim2.new(1, -30, 0, 22), radarPanel, Enum.Font.GothamBold, 13)
+radarTitle.TextColor3 = COLORS.cyan
+local radarDisc = Instance.new("Frame")
+radarDisc.Position = UDim2.fromOffset(15, 43)
+radarDisc.Size = UDim2.fromOffset(92, 92)
+radarDisc.BackgroundColor3 = Color3.fromRGB(12, 72, 83)
+radarDisc.BackgroundTransparency = 0.12
+radarDisc.Parent = radarPanel
+rounded(radarDisc, 46)
+stroke(radarDisc, COLORS.cyan, 1.2, 0.2)
+local radarCrossH = Instance.new("Frame")
+radarCrossH.AnchorPoint = Vector2.new(0.5, 0.5)
+radarCrossH.Position = UDim2.fromScale(0.5, 0.5)
+radarCrossH.Size = UDim2.new(1, -14, 0, 1)
+radarCrossH.BackgroundColor3 = COLORS.cyan
+radarCrossH.BackgroundTransparency = 0.65
+radarCrossH.Parent = radarDisc
+local radarCrossV = Instance.new("Frame")
+radarCrossV.AnchorPoint = Vector2.new(0.5, 0.5)
+radarCrossV.Position = UDim2.fromScale(0.5, 0.5)
+radarCrossV.Size = UDim2.new(0, 1, 1, -14)
+radarCrossV.BackgroundColor3 = COLORS.cyan
+radarCrossV.BackgroundTransparency = 0.65
+radarCrossV.Parent = radarDisc
+local radarNeedle = Instance.new("Frame")
+radarNeedle.AnchorPoint = Vector2.new(0.5, 1)
+radarNeedle.Position = UDim2.fromScale(0.5, 0.5)
+radarNeedle.Size = UDim2.fromOffset(3, 33)
+radarNeedle.BackgroundColor3 = COLORS.green
+radarNeedle.Visible = false
+radarNeedle.Parent = radarDisc
+local radarDot = Instance.new("Frame")
+radarDot.AnchorPoint = Vector2.new(0.5, 0.5)
+radarDot.Position = UDim2.fromScale(0.5, 0.5)
+radarDot.Size = UDim2.fromOffset(10, 10)
+radarDot.BackgroundColor3 = COLORS.green
+radarDot.Parent = radarDisc
+rounded(radarDot, 5)
+local radarDistanceLabel = textLabel("RadarDistance", "暂无目标", UDim2.fromOffset(120, 48), UDim2.new(1, -132, 0, 28), radarPanel, Enum.Font.GothamBold, 15)
+radarDistanceLabel.TextColor3 = COLORS.white
+local radarDirectionLabel = textLabel("RadarDirection", "探索航区后自动锁定", UDim2.fromOffset(120, 78), UDim2.new(1, -132, 0, 24), radarPanel, Enum.Font.Gotham, 11)
+radarDirectionLabel.TextColor3 = COLORS.muted
+radarDirectionLabel.TextWrapped = true
+local radarStrengthLabel = textLabel("RadarStrength", "信号强度  --", UDim2.fromOffset(120, 108), UDim2.new(1, -132, 0, 22), radarPanel, Enum.Font.GothamMedium, 11)
+radarStrengthLabel.TextColor3 = COLORS.green
 
 local messagePanel = panel("Message", UDim2.new(0.5, -310, 1, -214), UDim2.fromOffset(620, 58))
 messagePanel.BackgroundColor3 = Color3.fromRGB(10, 47, 65)
@@ -295,8 +353,8 @@ local actions = panel("Actions", UDim2.new(0.5, -455, 1, -142), UDim2.fromOffset
 actions.BackgroundTransparency = 0.03
 local actionLayout = Instance.new("UIGridLayout")
 actionLayout.CellPadding = UDim2.fromOffset(8, 8)
-actionLayout.CellSize = UDim2.fromOffset(170, 44)
-actionLayout.FillDirectionMaxCells = 5
+actionLayout.CellSize = UDim2.fromOffset(140, 44)
+actionLayout.FillDirectionMaxCells = 6
 actionLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 actionLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 actionLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -329,15 +387,15 @@ local function makeButton(key: string, caption: string, action: string, payload,
 end
 
 makeButton("Sail", "开始新航次", "Sail", nil, 1, Color3.fromRGB(25, 139, 139))
-makeButton("Scan", "声呐扫描  [Q]", "Scan", nil, 2, Color3.fromRGB(32, 118, 156))
-makeButton("North", "向北  [W]", "Move", { dx = 0, dz = 1 }, 3)
-makeButton("West", "向西  [A]", "Move", { dx = -1, dz = 0 }, 4)
-makeButton("East", "向东  [D]", "Move", { dx = 1, dz = 0 }, 5)
-makeButton("South", "向南  [S]", "Move", { dx = 0, dz = -1 }, 6)
-makeButton("Net", "下网捕捞  [F]", "Net", nil, 7, Color3.fromRGB(25, 145, 126))
-makeButton("Return", "封舱返港  [R]", "Return", nil, 8, Color3.fromRGB(164, 111, 36))
-makeButton("SellAll", "全部出售", "SellAll", nil, 9, Color3.fromRGB(173, 111, 28))
-makeButton("KeepRare", "收藏珍稀鱼", "KeepRare", nil, 10, Color3.fromRGB(124, 69, 177))
+makeButton("North", "向北  [W]", "Move", { dx = 0, dz = 1 }, 2)
+makeButton("West", "向西  [A]", "Move", { dx = -1, dz = 0 }, 3)
+makeButton("East", "向东  [D]", "Move", { dx = 1, dz = 0 }, 4)
+makeButton("South", "向南  [S]", "Move", { dx = 0, dz = -1 }, 5)
+makeButton("Collect", "获取鱼群  [E]", "Collect", nil, 6, Color3.fromRGB(25, 145, 126))
+makeButton("Return", "返港出售  [R]", "Return", nil, 7, Color3.fromRGB(164, 111, 36))
+makeButton("SellAll", "出售货舱", "SellAll", nil, 8, Color3.fromRGB(173, 111, 28))
+makeButton("KeepRare", "收藏珍稀鱼", "KeepRare", nil, 9, Color3.fromRGB(124, 69, 177))
+makeButton("UpgradeCargo", "升级货舱", "UpgradeCargo", nil, 10, Color3.fromRGB(37, 104, 179))
 
 local intro = Instance.new("Frame")
 intro.Name = "Intro"
@@ -360,9 +418,9 @@ introScale.Parent = introCard
 local introKicker = textLabel("Kicker", "A PLAYABLE ECSR STORY", UDim2.fromOffset(36, 30), UDim2.new(1, -72, 0, 24), introCard, Enum.Font.GothamBold, 12)
 introKicker.ZIndex = 102
 introKicker.TextColor3 = COLORS.cyan
-local introTitle = textLabel("IntroTitle", "破冰，找到那片鱼群", UDim2.fromOffset(36, 58), UDim2.new(1, -72, 0, 58), introCard, Enum.Font.GothamBold, 36)
+local introTitle = textLabel("IntroTitle", "雷达，找到一片片鱼群", UDim2.fromOffset(36, 58), UDim2.new(1, -72, 0, 58), introCard, Enum.Font.GothamBold, 36)
 introTitle.ZIndex = 102
-local introBody = textLabel("IntroBody", "海鸟和水面信号会暴露鱼群踪迹。规划最省燃料的航线，撞开浮冰，下网捕捞，再决定把珍稀渔获卖掉还是留进收藏。", UDim2.fromOffset(36, 120), UDim2.new(1, -72, 0, 62), introCard, Enum.Font.Gotham, 15)
+local introBody = textLabel("IntroBody", "航区里会同时生成多个鱼群。看右下角雷达探索，进入发现范围后按 E 获取；货舱装满就沿破开的航道返港出售，再升级货舱继续下一轮。", UDim2.fromOffset(36, 120), UDim2.new(1, -72, 0, 62), introCard, Enum.Font.Gotham, 15)
 introBody.ZIndex = 102
 introBody.TextWrapped = true
 introBody.TextColor3 = COLORS.muted
@@ -379,10 +437,10 @@ loopLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 loopLayout.Padding = UDim.new(0, 10)
 loopLayout.Parent = loopFrame
 for index, data in ipairs({
-	{ "01", "追踪", "循海鸟与声呐找鱼" },
-	{ "02", "破冰", "选择路线控制燃料" },
-	{ "03", "收获", "下网并筛选珍稀鱼" },
-	{ "04", "结算", "出售或永久收藏" },
+	{ "01", "雷达", "自动指向最近鱼群" },
+	{ "02", "探索", "航行并撞开浮冰" },
+	{ "03", "发现", "靠近显示价值" },
+	{ "04", "获取", "按 E 占用一个货舱格" },
 }) do
 	local card = Instance.new("Frame")
 	card.Size = UDim2.fromOffset(166, 88)
@@ -602,44 +660,354 @@ local function createBirds(x: number, z: number)
 	end
 end
 
-local function createFishSchool(x: number, z: number, stock: number)
-	local origin = worldPosition(x, z, -0.25)
-	for index = 1, math.max(3, stock * 2) do
-		local fish = part(
-			"FishSignal",
-			Vector3.new(1.8, 0.26, 0.72),
-			CFrame.new(origin + Vector3.new(((index - 1) % 3 - 1) * 1.8, 0, (math.floor((index - 1) / 3) - 0.5) * 2.1)) * CFrame.Angles(0, math.rad(90), 0),
-			if index % 2 == 0 then COLORS.cyan else Color3.fromRGB(75, 173, 255),
-			Enum.Material.Neon,
-			0.08
+local FISH_STYLES: { [string]: { body: Color3, accent: Color3, length: number, width: number } } = {
+	IceHerring = {
+		body = Color3.fromRGB(132, 201, 218),
+		accent = Color3.fromRGB(226, 248, 250),
+		length = 2.05,
+		width = 0.72,
+	},
+	ArcticCod = {
+		body = Color3.fromRGB(73, 142, 177),
+		accent = Color3.fromRGB(168, 224, 232),
+		length = 2.35,
+		width = 0.92,
+	},
+	AuroraSalmon = {
+		body = Color3.fromRGB(66, 142, 225),
+		accent = Color3.fromRGB(224, 101, 210),
+		length = 2.45,
+		width = 0.82,
+	},
+	CrystalHalibut = {
+		body = Color3.fromRGB(174, 111, 231),
+		accent = Color3.fromRGB(218, 240, 255),
+		length = 2.1,
+		width = 1.25,
+	},
+}
+
+local function createFishModel(name: string, fish, scale: number, parent: Instance): Model
+	local style = FISH_STYLES[fish.species] or FISH_STYLES.IceHerring
+	local model = Instance.new("Model")
+	model.Name = name
+	model.Parent = parent
+
+	local body = part(
+		"Body",
+		Vector3.new(style.width, 0.68, style.length) * scale,
+		CFrame.new(),
+		style.body,
+		Enum.Material.SmoothPlastic,
+		0,
+		model
+	)
+	body.Shape = Enum.PartType.Ball
+	local belly = part(
+		"Belly",
+		Vector3.new(style.width * 0.7, 0.22, style.length * 0.68) * scale,
+		CFrame.new(0, -0.27 * scale, -0.05 * scale),
+		style.accent,
+		Enum.Material.SmoothPlastic,
+		0.12,
+		model
+	)
+	belly.Shape = Enum.PartType.Ball
+	part(
+		"SpineGlow",
+		Vector3.new(style.width * 0.22, 0.08, style.length * 0.7) * scale,
+		CFrame.new(0, 0.35 * scale, 0),
+		style.accent,
+		Enum.Material.Neon,
+		0.18,
+		model
+	)
+
+	for side = -1, 1, 2 do
+		part(
+			"TailFin",
+			Vector3.new(0.52, 0.12, 0.88) * scale,
+			CFrame.new(side * 0.25 * scale, 0, style.length * 0.58 * scale)
+				* CFrame.Angles(0, math.rad(side * 34), math.rad(side * 8)),
+			style.accent,
+			Enum.Material.SmoothPlastic,
+			0.04,
+			model,
+			"WedgePart"
 		)
-		fish.Shape = Enum.PartType.Block
+		part(
+			"SideFin",
+			Vector3.new(0.38, 0.1, 0.62) * scale,
+			CFrame.new(side * style.width * 0.5 * scale, -0.02 * scale, 0.08 * scale)
+				* CFrame.Angles(0, math.rad(side * 42), math.rad(-side * 8)),
+			style.accent,
+			Enum.Material.SmoothPlastic,
+			0.08,
+			model,
+			"WedgePart"
+		)
+		local eye = part(
+			"Eye",
+			Vector3.new(0.13, 0.13, 0.13) * scale,
+			CFrame.new(side * style.width * 0.36 * scale, 0.23 * scale, -style.length * 0.34 * scale),
+			Color3.fromRGB(8, 23, 31),
+			Enum.Material.SmoothPlastic,
+			0,
+			model
+		)
+		eye.Shape = Enum.PartType.Ball
+	end
+
+	part(
+		"DorsalFin",
+		Vector3.new(0.16, 0.5, 0.62) * scale,
+		CFrame.new(0, 0.48 * scale, 0.16 * scale) * CFrame.Angles(math.rad(-10), 0, 0),
+		style.accent,
+		Enum.Material.SmoothPlastic,
+		0.05,
+		model,
+		"WedgePart"
+	)
+	model.PrimaryPart = body
+	return model
+end
+
+local function createFishSchool(x: number, z: number, school)
+	local stock = school.stock or 1
+	local tier = school.tier or 0
+	local origin = worldPosition(x, z, -0.42)
+	local schoolColor = if school.rarity == "Epic"
+		then COLORS.epic
+		elseif school.rarity == "Rare"
+		then COLORS.rare
+		else COLORS.cyan
+	local fishCount = math.clamp(math.max(4, stock * 2), 4, 7)
+	for index = 1, fishCount do
+		local phase = (index / fishCount) * math.pi * 2
+		local radius = 1.25 + (index % 3) * 0.52
+		local fishModel = createFishModel(
+			"SchoolFish",
+			school,
+			0.62 + (index % 3) * 0.06,
+			scene
+		)
+		local position = origin + Vector3.new(math.cos(phase) * radius, (index % 2) * 0.16, math.sin(phase) * radius * 0.68)
+		local tangent = Vector3.new(-math.sin(phase), 0, math.cos(phase) * 0.68).Unit
+		fishModel:PivotTo(CFrame.lookAt(position, position + tangent))
+		table.insert(presentation.animated, {
+			kind = "fish",
+			model = fishModel,
+			center = origin,
+			phase = phase,
+			radius = radius,
+			speed = 0.42 + (index % 3) * 0.07,
+		})
 	end
 	for index = 1, 5 do
 		local bubble = part("Bubble", Vector3.new(0.25, 0.25, 0.25), CFrame.new(origin + Vector3.new((index - 3) * 0.7, 0.4 + index * 0.18, (index % 2) * 0.6)), COLORS.white, Enum.Material.Glass, 0.25)
 		bubble.Shape = Enum.PartType.Ball
 	end
-	local marker = part("SchoolMarker", Vector3.new(0.3, 0.3, 0.3), CFrame.new(worldPosition(x, z, 1.1)), COLORS.green, Enum.Material.Neon, 0.15)
-	billboard(marker, "鱼群 · 可下网", COLORS.green)
+	local marker = part("SchoolMarker", Vector3.new(0.3, 0.3, 0.3), CFrame.new(worldPosition(x, z, 1.1)), schoolColor, Enum.Material.Neon, 0.15)
+	local displayName = school.displayName
+	if displayName == nil then
+		displayName = if tier > 0 then string.format("%d 级外海鱼群", tier) else "鱼群"
+	end
+	billboard(marker, string.format("%s · %d 金 · 按 E", displayName, school.value or 0), schoolColor)
+end
+
+local function playAndDestroy(object: Instance, tween)
+	tween.Completed:Connect(function()
+		if object.Parent ~= nil then
+			object:Destroy()
+		end
+	end)
+	tween:Play()
+end
+
+local function createWaterRipple(center: Vector3, delayTime: number, diameter: number)
+	task.delay(delayTime, function()
+		if effects.Parent == nil then
+			return
+		end
+		local ripple = part(
+			"IceBreakRipple",
+			Vector3.new(0.06, 2.2, 2.2),
+			CFrame.new(center + Vector3.new(0, -0.7, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color3.fromRGB(206, 247, 255),
+			Enum.Material.Neon,
+			0.28,
+			effects
+		)
+		ripple.Shape = Enum.PartType.Cylinder
+		playAndDestroy(ripple, TweenService:Create(
+			ripple,
+			TweenInfo.new(0.82, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{
+				Size = Vector3.new(0.03, diameter, diameter),
+				Transparency = 1,
+			}
+		))
+	end)
+end
+
+local function createSplashDroplets(center: Vector3)
+	for index = 1, 11 do
+		local angle = (index / 11) * math.pi * 2 + 0.24
+		local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local radius = 0.16 + (index % 3) * 0.055
+		local droplet = part(
+			"IceBreakDroplet",
+			Vector3.new(radius, radius * 1.7, radius),
+			CFrame.new(center + direction * 0.8 - Vector3.new(0, 0.35, 0)),
+			Color3.fromRGB(211, 249, 255),
+			Enum.Material.Glass,
+			0.08,
+			effects
+		)
+		droplet.Shape = Enum.PartType.Ball
+		local apex = center + direction * (2.1 + (index % 4) * 0.35) + Vector3.new(0, 1.5 + (index % 3) * 0.42, 0)
+		local rise = TweenService:Create(
+			droplet,
+			TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Position = apex }
+		)
+		rise.Completed:Connect(function()
+			if droplet.Parent == nil then
+				return
+			end
+			local landing = center + direction * (3.4 + (index % 4) * 0.42) - Vector3.new(0, 1.25, 0)
+			playAndDestroy(droplet, TweenService:Create(
+				droplet,
+				TweenInfo.new(0.46, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{
+					Position = landing,
+					Transparency = 1,
+					Size = Vector3.new(radius * 0.45, radius * 0.7, radius * 0.45),
+				}
+			))
+		end)
+		rise:Play()
+	end
+end
+
+local function createSinkingIce(center: Vector3)
+	local pieces = {
+		{ offset = Vector3.new(-2.05, 0, -1.8), size = Vector3.new(3.65, 0.68, 3.15), yaw = -0.10, pitch = -0.34, roll = 0.21 },
+		{ offset = Vector3.new(1.85, 0, -2.0), size = Vector3.new(3.35, 0.68, 3.5), yaw = 0.13, pitch = -0.25, roll = -0.30 },
+		{ offset = Vector3.new(-1.85, 0, 1.75), size = Vector3.new(3.4, 0.68, 3.25), yaw = 0.08, pitch = 0.31, roll = 0.25 },
+		{ offset = Vector3.new(2.0, 0, 1.8), size = Vector3.new(3.55, 0.68, 3.2), yaw = -0.14, pitch = 0.27, roll = -0.23 },
+		{ offset = Vector3.new(0, 0.08, 0), size = Vector3.new(2.15, 0.72, 2.25), yaw = 0.28, pitch = 0.42, roll = 0.16 },
+	}
+
+	for index, definition in ipairs(pieces) do
+		local outward = Vector3.new(definition.offset.X, 0, definition.offset.Z)
+		if outward.Magnitude < 0.1 then
+			outward = Vector3.new(0.25, 0, -1)
+		else
+			outward = outward.Unit
+		end
+		local startCFrame = CFrame.new(center + definition.offset) * CFrame.Angles(0, definition.yaw, 0)
+		local slab = part(
+			"SinkingIceSlab",
+			definition.size,
+			startCFrame,
+			Color3.fromRGB(202, 234, 244),
+			Enum.Material.Glacier,
+			0,
+			effects
+		)
+		local kickCFrame = startCFrame
+			* CFrame.new(outward.X * 0.32, 0.18 + (index % 2) * 0.08, outward.Z * 0.32)
+			* CFrame.Angles(definition.pitch * 0.32, definition.yaw * 0.4, definition.roll * 0.32)
+		local kick = TweenService:Create(
+			slab,
+			TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ CFrame = kickCFrame }
+		)
+		kick.Completed:Connect(function()
+			if slab.Parent == nil then
+				return
+			end
+			local sinkCFrame = kickCFrame
+				* CFrame.new(outward.X * 0.7, -4.5 - index * 0.18, outward.Z * 0.7)
+				* CFrame.Angles(definition.pitch, definition.yaw, definition.roll)
+			playAndDestroy(slab, TweenService:Create(
+				slab,
+				TweenInfo.new(1.12 + index * 0.055, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{
+					CFrame = sinkCFrame,
+					Color = Color3.fromRGB(94, 169, 195),
+					Transparency = 1,
+				}
+			))
+		end)
+		kick:Play()
+	end
 end
 
 local function createIceBreakBurst(x: number, z: number)
-	local center = worldPosition(x, z, 0.45)
-	for index = 1, 7 do
-		local angle = (index / 7) * math.pi * 2
-		local shard = part("IceShard", Vector3.new(1.1, 0.28, 1.5), CFrame.new(center) * CFrame.Angles(0, angle, 0), Color3.fromRGB(220, 244, 250), Enum.Material.Glacier)
-		local destination = center + Vector3.new(math.cos(angle) * 4.5, 1.2 + (index % 2), math.sin(angle) * 4.5)
-		local tween = TweenService:Create(shard, TweenInfo.new(0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Position = destination,
+	local center = worldPosition(x, z, 0.22)
+	createSinkingIce(center)
+	createSplashDroplets(center)
+	createWaterRipple(center, 0, 8.5)
+	createWaterRipple(center, 0.14, 12.5)
+
+	local flash = part(
+		"IceBreakFlash",
+		Vector3.new(1.4, 1.4, 1.4),
+		CFrame.new(center + Vector3.new(0, 0.25, 0)),
+		Color3.fromRGB(225, 251, 255),
+		Enum.Material.Neon,
+		0.18,
+		effects
+	)
+	flash.Shape = Enum.PartType.Ball
+	playAndDestroy(flash, TweenService:Create(
+		flash,
+		TweenInfo.new(0.24, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{
+			Size = Vector3.new(5.2, 2.1, 5.2),
 			Transparency = 1,
-			Orientation = Vector3.new(index * 31, index * 47, index * 23),
-		})
-		tween:Play()
-		tween.Completed:Connect(function()
-			if shard.Parent ~= nil then
-				shard:Destroy()
+		}
+	))
+
+	for index = 1, 9 do
+		local angle = (index / 9) * math.pi * 2
+		local direction = Vector3.new(math.cos(angle), 0, math.sin(angle))
+		local shard = part(
+			"IceShard",
+			Vector3.new(0.65 + (index % 3) * 0.18, 0.22 + (index % 2) * 0.08, 0.9 + (index % 4) * 0.18),
+			CFrame.new(center + direction * 0.9) * CFrame.Angles(0, angle, 0),
+			Color3.fromRGB(220, 244, 250),
+			Enum.Material.Glacier,
+			0,
+			effects
+		)
+		local apex = center + direction * (3.2 + (index % 3) * 0.55) + Vector3.new(0, 1.6 + (index % 2) * 0.7, 0)
+		local burst = TweenService:Create(
+			shard,
+			TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{
+				Position = apex,
+				Orientation = Vector3.new(index * 23, index * 41, index * 17),
+			}
+		)
+		burst.Completed:Connect(function()
+			if shard.Parent == nil then
+				return
 			end
+			local landing = center + direction * (4.1 + (index % 3) * 0.65) - Vector3.new(0, 2.4, 0)
+			playAndDestroy(shard, TweenService:Create(
+				shard,
+				TweenInfo.new(0.72, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+				{
+					Position = landing,
+					Orientation = Vector3.new(index * 61, index * 79, index * 43),
+					Transparency = 1,
+				}
+			))
 		end)
+		burst:Play()
 	end
 end
 
@@ -652,7 +1020,111 @@ local function boatPivot(vessel): CFrame
 	return CFrame.lookAt(position, position + direction)
 end
 
-local function createBoat(vessel, previousVessel)
+local function createCatchHaul(x: number, z: number, fish, vessel)
+	local haul = Instance.new("Model")
+	haul.Name = "CatchHaulRig"
+	haul.Parent = effects
+	local anchor = part(
+		"CatchHaulRoot",
+		Vector3.new(0.15, 0.15, 0.15),
+		CFrame.new(),
+		COLORS.cyan,
+		Enum.Material.Neon,
+		1,
+		haul
+	)
+	haul.PrimaryPart = anchor
+
+	local ropeColor = Color3.fromRGB(195, 221, 214)
+	local function netLine(name: string, from: Vector3, to: Vector3, width: number)
+		local distance = (to - from).Magnitude
+		part(
+			name,
+			Vector3.new(width, width, distance),
+			CFrame.lookAt((from + to) * 0.5, to),
+			ropeColor,
+			Enum.Material.Fabric,
+			0.08,
+			haul
+		)
+	end
+
+	local corners = {
+		Vector3.new(-1.35, 0, -1.35),
+		Vector3.new(1.35, 0, -1.35),
+		Vector3.new(1.35, 0, 1.35),
+		Vector3.new(-1.35, 0, 1.35),
+	}
+	for index, corner in ipairs(corners) do
+		local nextCorner = corners[(index % #corners) + 1]
+		netLine("NetHoop", corner, nextCorner, 0.11)
+		netLine("NetBasket", corner, Vector3.new(0, -1.35, 0), 0.065)
+		netLine("NetRope", corner, Vector3.new(0, 2.25, 0), 0.07)
+	end
+	netLine("HoistCable", Vector3.new(0, 2.25, 0), Vector3.new(0, 4.3, 0), 0.09)
+
+	for index = 1, 3 do
+		local caughtFish = createFishModel("CaughtFish", fish, 0.48 + index * 0.025, haul)
+		caughtFish:PivotTo(
+			CFrame.new((index - 2) * 0.64, -0.52 - (index % 2) * 0.22, (index % 2) * 0.5 - 0.25)
+				* CFrame.Angles(math.rad(index * 11), math.rad(60 + index * 47), math.rad(index * 8))
+		)
+	end
+
+	local source = worldPosition(x, z, -0.28)
+	local destination = boatPivot(vessel) * CFrame.new(0, 3.0, 3.05)
+	haul:PivotTo(CFrame.new(source))
+	createWaterRipple(source, 0.02, 7.2)
+
+	local driver = Instance.new("CFrameValue")
+	driver.Value = CFrame.new(source)
+	driver.Parent = haul
+	local connection = driver:GetPropertyChangedSignal("Value"):Connect(function()
+		if haul.Parent ~= nil then
+			haul:PivotTo(driver.Value)
+		end
+	end)
+	local lift = TweenService:Create(
+		driver,
+		TweenInfo.new(0.42, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+		{ Value = CFrame.new(source + Vector3.new(0, 5.2, 0)) * CFrame.Angles(0, math.rad(-8), math.rad(4)) }
+	)
+	lift.Completed:Connect(function()
+		if haul.Parent == nil or driver.Parent == nil then
+			connection:Disconnect()
+			return
+		end
+		local land = TweenService:Create(
+			driver,
+			TweenInfo.new(0.72, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut),
+			{ Value = destination * CFrame.Angles(0, math.rad(12), math.rad(-5)) }
+		)
+		land.Completed:Connect(function()
+			connection:Disconnect()
+			if driver.Parent ~= nil then
+				driver:Destroy()
+			end
+			for _, descendant in ipairs(haul:GetDescendants()) do
+				if descendant:IsA("BasePart") then
+					TweenService:Create(
+						descendant,
+						TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+						{ Transparency = 1 }
+					):Play()
+				end
+			end
+			task.delay(0.3, function()
+				if haul.Parent ~= nil then
+					haul:Destroy()
+				end
+			end)
+		end)
+		land:Play()
+	end)
+	lift:Play()
+end
+
+local function createBoat(vessel, previousVessel, hold)
 	local model = Instance.new("Model")
 	model.Name = "FishingVessel"
 	model.Parent = scene
@@ -675,6 +1147,18 @@ local function createBoat(vessel, previousVessel)
 	end
 	part("NetDrum", Vector3.new(1.2, 1.2, 2.5), CFrame.new(-2.2, 1.9, 2.8) * CFrame.Angles(0, 0, math.pi / 2), Color3.fromRGB(51, 59, 62), Enum.Material.Metal, 0, model)
 	part("Wake", Vector3.new(5.7, 0.1, 5.6), CFrame.new(0, -1.02, 6.1), COLORS.white, Enum.Material.Neon, 0.54, model)
+	for index, fish in ipairs(hold or {}) do
+		if index > 7 then
+			break
+		end
+		local column = (index - 1) % 3
+		local row = math.floor((index - 1) / 3)
+		local cargoFish = createFishModel("CargoFish", fish, 0.27, model)
+		cargoFish:PivotTo(
+			CFrame.new((column - 1) * 1.02, 2.18 + row * 0.05, 2.55 + row * 0.76)
+				* CFrame.Angles(math.rad(-6), math.rad(82 + index * 7), math.rad((index % 2) * 8 - 4))
+		)
+	end
 	model.PrimaryPart = hull
 
 	local destination = boatPivot(vessel)
@@ -710,6 +1194,17 @@ local function cellMap(state)
 	return result
 end
 
+local function removedSchoolCell(previous, nextState)
+	local currentCells = cellMap(nextState)
+	for _, cell in ipairs(previous.cells) do
+		local current = currentCells[tostring(cell.x) .. ":" .. tostring(cell.z)]
+		if cell.school ~= nil and (current == nil or current.school == nil) then
+			return cell
+		end
+	end
+	return nil
+end
+
 local function fishSummary(fishList)
 	if #fishList == 0 then
 		return "渔舱为空"
@@ -723,10 +1218,13 @@ local function fishSummary(fishList)
 end
 
 local function activeObjective(state): number
-	if state.mode == "Docked" then return 1 end
-	if state.mode == "Searching" then return if state.revealed then 3 else 2 end
-	if state.mode == "AtSchool" then return 4 end
-	return 5
+	if state.mode == "Docked" then return if state.round == 0 then 1 else 6 end
+	if state.mode == "Searching" then
+		if state.nearbySchool ~= nil then return 4 end
+		return 2
+	end
+	if state.mode == "ReadyToReturn" or state.mode == "Returning" or state.mode == "DockedWithCatch" then return 5 end
+	return 6
 end
 
 local function updateObjectives(state)
@@ -745,16 +1243,24 @@ local function updateMiniMap(state)
 			child:Destroy()
 		end
 	end
+	local bounds = state.bounds or { minX = -4, maxX = 4, minZ = 0, maxZ = 8 }
+	local columns = bounds.maxX - bounds.minX + 1
+	local rows = bounds.maxZ - bounds.minZ + 1
+	local gap = 2
+	local tileSize = math.max(12, math.floor((196 - gap * (math.max(columns, rows) - 1)) / math.max(columns, rows)))
 	for _, cell in ipairs(state.cells) do
 		local tile = Instance.new("Frame")
 		tile.Name = tostring(cell.x) .. ":" .. tostring(cell.z)
-		tile.Position = UDim2.fromOffset(5 + (cell.x + 3) * 27, 5 + (6 - cell.z) * 27)
-		tile.Size = UDim2.fromOffset(24, 24)
+		tile.Position = UDim2.fromOffset(
+			4 + (cell.x - bounds.minX) * (tileSize + gap),
+			4 + (bounds.maxZ - cell.z) * (tileSize + gap)
+		)
+		tile.Size = UDim2.fromOffset(tileSize, tileSize)
 		tile.BorderSizePixel = 0
 		tile.BackgroundColor3 = if cell.isPort
 			then COLORS.gold
 			elseif cell.ice
-			then Color3.fromRGB(199, 230, 239)
+			then if cell.ice > 1 then Color3.fromRGB(112, 166, 190) else Color3.fromRGB(199, 230, 239)
 			else Color3.fromRGB(38, 124, 158)
 		tile.BackgroundTransparency = if cell.ice then 0.05 else 0.2
 		tile.Parent = mapGrid
@@ -769,7 +1275,7 @@ local function updateMiniMap(state)
 			rounded(signal, 4)
 		end
 		if cell.school ~= nil then
-			stroke(tile, COLORS.green, 2, 0)
+			stroke(tile, if cell.school.rarity == "Epic" then COLORS.epic elseif cell.school.rarity == "Rare" then COLORS.rare else COLORS.green, 2, 0)
 		end
 		if cell.x == state.vessel.x and cell.z == state.vessel.z then
 			local boat = Instance.new("Frame")
@@ -788,15 +1294,48 @@ end
 local function updateButtons(state)
 	local mode = state.mode
 	buttons.Sail.Visible = mode == "Docked"
-	buttons.Scan.Visible = mode == "Searching"
-	buttons.North.Visible = mode == "Searching" or mode == "Returning"
+	buttons.North.Visible = mode == "Searching" or mode == "ReadyToReturn" or mode == "Returning"
 	buttons.West.Visible = buttons.North.Visible
 	buttons.East.Visible = buttons.North.Visible
 	buttons.South.Visible = buttons.North.Visible
-	buttons.Net.Visible = mode == "AtSchool"
-	buttons.Return.Visible = mode == "ReadyToReturn"
+	buttons.Collect.Visible = mode == "Searching" and state.nearbySchool ~= nil
+	buttons.Collect.Active = buttons.Collect.Visible
+	buttons.Collect.Text = if state.nearbySchool ~= nil
+		then string.format("获取鱼群  [E]  %d金", state.nearbySchool.value)
+		else "获取鱼群  [E]"
+	buttons.Return.Visible = (mode == "Searching" or mode == "ReadyToReturn") and #state.hold > 0
 	buttons.SellAll.Visible = mode == "DockedWithCatch"
 	buttons.KeepRare.Visible = mode == "DockedWithCatch"
+	local cargoUpgrade = state.cargoUpgrade
+	local canCargoUpgrade = cargoUpgrade.cargoLevel < cargoUpgrade.maxCargoLevel
+	buttons.UpgradeCargo.Visible = mode == "Docked"
+	buttons.UpgradeCargo.Active = canCargoUpgrade
+	buttons.UpgradeCargo.AutoButtonColor = canCargoUpgrade
+	buttons.UpgradeCargo.Text = if canCargoUpgrade
+		then string.format("升级货舱  %d 金", cargoUpgrade.nextCargoCost)
+		else "货舱已满级"
+	buttons.UpgradeCargo.BackgroundColor3 = if canCargoUpgrade then Color3.fromRGB(37, 104, 179) else Color3.fromRGB(57, 75, 84)
+end
+
+local function updateRadar(state)
+	local radar = state.radar
+	if radar == nil or radar.target == nil then
+		radarTitle.Text = "雷达 · 暂无目标"
+		radarDistanceLabel.Text = "暂无目标"
+		radarDirectionLabel.Text = if state.schoolsRemaining == 0 then "本轮鱼群已全部获取" else "探索航区后自动锁定"
+		radarStrengthLabel.Text = "信号强度  --"
+		radarDot.BackgroundTransparency = 0.35
+		radarNeedle.Visible = false
+		return
+	end
+	local intensity = math.clamp(radar.intensity or 0, 0, 1)
+	radarTitle.Text = string.format("雷达 · %d 个未发现", radar.remaining or 0)
+	radarDistanceLabel.Text = string.format("距离目标 %d 格", radar.distance or 0)
+	radarDirectionLabel.Text = "方向  " .. tostring(radar.direction or "未知")
+	radarStrengthLabel.Text = string.format("信号强度  %d%%", math.floor(intensity * 100 + 0.5))
+	radarDot.BackgroundTransparency = 0.75 - intensity * 0.7
+	radarNeedle.Visible = true
+	radarNeedle.Rotation = math.deg(math.atan2(radar.target.z - state.vessel.z, radar.target.x - state.vessel.x))
 end
 
 local function showCatchReveal(fishList)
@@ -918,7 +1457,7 @@ local function render(nextState)
 		part("SeaGrid", Vector3.new(9.2, 0.08, 9.2), CFrame.new(base), Color3.fromRGB(54, 151, 184), Enum.Material.Glass, 0.58)
 		if cell.ice then createIceFloe(cell) end
 		if cell.signal ~= nil then createBirds(cell.x, cell.z) end
-		if cell.school ~= nil and cell.school.stock > 0 then createFishSchool(cell.x, cell.z, cell.school.stock) end
+		if cell.school ~= nil and cell.school.stock > 0 then createFishSchool(cell.x, cell.z, cell.school) end
 	end
 
 	if nextState.target ~= nil then
@@ -942,13 +1481,28 @@ local function render(nextState)
 			end
 		end
 	end
-	createBoat(nextState.vessel, if previous ~= nil then previous.vessel else nil)
+	createBoat(nextState.vessel, if previous ~= nil then previous.vessel else nil, nextState.hold)
+	if previous ~= nil and #nextState.hold > #previous.hold then
+		local fish = nextState.hold[#nextState.hold]
+		local sourceCell = removedSchoolCell(previous, nextState)
+		createCatchHaul(
+			if sourceCell ~= nil then sourceCell.x else previous.vessel.x,
+			if sourceCell ~= nil then sourceCell.z else previous.vessel.z,
+			fish,
+			nextState.vessel
+		)
+	end
 	updateCamera(nextState)
 
 	modeLabel.Text = (MODE_NAMES[nextState.mode] or nextState.mode) .. "  ·  ECSR TICK " .. tostring(nextState.tick)
 	coinLabel.Text = "金币  " .. tostring(nextState.coins)
 	roundLabel.Text = "航次  " .. tostring(nextState.round)
 	fuelLabel.Text = string.format("破冰燃料  %d / %d", nextState.vessel.fuel, nextState.vessel.maxFuel)
+	cargoLevelLabel.Text = string.format(
+		"货舱 Lv.%d / %d",
+		nextState.cargoUpgrade.cargoLevel,
+		nextState.cargoUpgrade.maxCargoLevel
+	)
 	local ratio = math.clamp(nextState.vessel.fuel / math.max(1, nextState.vessel.maxFuel), 0, 1)
 	TweenService:Create(fuelFill, TweenInfo.new(0.35), { Size = UDim2.fromScale(ratio, 1), BackgroundColor3 = if ratio < 0.3 then Color3.fromRGB(255, 112, 78) else COLORS.green }):Play()
 	cargoCount.Text = string.format("%d / %d", #nextState.hold, nextState.vessel.capacity)
@@ -957,6 +1511,7 @@ local function render(nextState)
 	messageLabel.Text = nextState.message
 	updateObjectives(nextState)
 	updateMiniMap(nextState)
+	updateRadar(nextState)
 	updateButtons(nextState)
 
 	if not presentation.introDismissed and nextState.round == 0 and nextState.mode == "Docked" then
@@ -966,8 +1521,9 @@ local function render(nextState)
 		dismissIntro(false)
 	end
 
-	if previous ~= nil and previous.mode == "AtSchool" and nextState.mode == "ReadyToReturn" then
-		showCatchReveal(nextState.hold)
+	if previous ~= nil and #nextState.hold > #previous.hold then
+		local fish = nextState.hold[#nextState.hold]
+		showRewardToast(string.format("获取鱼群  ·  %s  ·  %d 金币", fish.displayName, fish.value))
 	elseif previous ~= nil and previous.mode == "DockedWithCatch" and nextState.mode == "Docked" then
 		local coins = nextState.coins - previous.coins
 		local trophies = #nextState.collection - #previous.collection
@@ -978,7 +1534,18 @@ end
 RunService.RenderStepped:Connect(function(deltaTime)
 	presentation.clock += deltaTime
 	for _, item in ipairs(presentation.animated) do
-		if item.part.Parent ~= nil then
+		if item.kind == "fish" then
+			if item.model.Parent ~= nil then
+				local angle = presentation.clock * item.speed + item.phase
+				local position = item.center + Vector3.new(
+					math.cos(angle) * item.radius,
+					math.sin(presentation.clock * 1.8 + item.phase) * 0.18,
+					math.sin(angle) * item.radius * 0.68
+				)
+				local tangent = Vector3.new(-math.sin(angle), 0, math.cos(angle) * 0.68).Unit
+				item.model:PivotTo(CFrame.lookAt(position, position + tangent))
+			end
+		elseif item.part.Parent ~= nil then
 			if item.kind == "wave" then
 				item.part.Transparency = 0.68 + math.sin(presentation.clock * 1.4 + item.phase) * 0.1
 			elseif item.kind == "radar" then
@@ -1014,10 +1581,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		send("Move", { dx = -1, dz = 0 })
 	elseif key == Enum.KeyCode.D then
 		send("Move", { dx = 1, dz = 0 })
-	elseif key == Enum.KeyCode.Q then
-		send("Scan")
-	elseif key == Enum.KeyCode.F then
-		send("Net")
+	elseif key == Enum.KeyCode.E then
+		send("Collect")
 	elseif key == Enum.KeyCode.R then
 		send("Return")
 	end
