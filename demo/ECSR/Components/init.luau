@@ -6,6 +6,7 @@ local DOMAIN_NAMES = table.freeze({
 	"Voyage",
 	"Vessel",
 	"Economy",
+	"CargoUpgrade",
 	"Hold",
 	"Collection",
 	"RngState",

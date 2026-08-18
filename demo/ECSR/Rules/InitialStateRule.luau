@@ -2,10 +2,18 @@
 
 local InitialStateRule = {}
 
-function InitialStateRule.create(C, worldRule, initialSeed: number)
+function InitialStateRule.create(C, worldRule, cargoUpgradeRule, initialSeed: number)
 	local entities = {
 		{
-			C.Vessel({ x = 0, z = 0, headingX = 0, headingZ = 1, fuel = 14, maxFuel = 14, capacity = 6 }),
+			C.Vessel({
+				x = 0,
+				z = 0,
+				headingX = 0,
+				headingZ = 1,
+				fuel = 80,
+				maxFuel = 80,
+				capacity = cargoUpgradeRule.initialCapacity(),
+			}),
 		},
 	}
 
@@ -29,6 +37,11 @@ function InitialStateRule.create(C, worldRule, initialSeed: number)
 				message = "船已停靠。点击“出航”开始第一趟破冰捕鱼。",
 			}),
 			C.Economy({ coins = 0 }),
+			C.CargoUpgrade({
+				cargoLevel = 0,
+				maxCargoLevel = cargoUpgradeRule.maxLevel(),
+				nextCargoCost = assert(cargoUpgradeRule.costForNextLevel(0)),
+			}),
 			C.Hold({ fishIds = {} }),
 			C.Collection({ fishIds = {} }),
 			C.RngState({ seed = initialSeed }),

@@ -7,6 +7,7 @@ local Matter = require(ReplicatedStorage.Packages.Matter)
 local ECSR = ReplicatedStorage.ECSR
 local FishingDemo = ReplicatedStorage.FishingDemo
 local GameRule = require(FishingDemo.Rules.GameRule)
+local WorldRule = require(FishingDemo.Rules.WorldRule)
 
 local application = GameRule.new(Matter, ECSR)
 local evolution = application.evolution
@@ -30,15 +31,23 @@ local stateEvent = remote("ECSRFishingState")
 
 local function snapshot()
 	local view = evolution:view()
-	local voyage, economy, hold, collection, stateRoot = view:get(
+	local voyage, economy, cargoUpgrade, hold, collection, stateRoot = view:get(
 		rootEntity,
 		C.Voyage,
 		C.Economy,
+		C.CargoUpgrade,
 		C.Hold,
 		C.Collection,
 		C.StateRoot
 	)
-	assert(voyage ~= nil and economy ~= nil and hold ~= nil and collection ~= nil and stateRoot ~= nil)
+	assert(
+		voyage ~= nil
+			and economy ~= nil
+			and cargoUpgrade ~= nil
+			and hold ~= nil
+			and collection ~= nil
+			and stateRoot ~= nil
+	)
 	local vesselRow = assert(view:query(C.Vessel)[1], "Fishing Demo needs one Vessel")
 	local vessel = vesselRow[2]
 
@@ -69,25 +78,72 @@ local function snapshot()
 	end
 
 	local cells = {}
-	local target = nil
+	local nearestHidden = nil
+	local nearestHiddenDistance = nil
+	local nearbySchool = nil
+	local remainingSchools = 0
 	for _, row in ipairs(view:query(C.SeaCell)) do
 		local entityId = row[1]
 		local cell = row[2]
 		local ice, signal, school = view:get(entityId, C.Ice, C.Signal, C.FishSchool)
-		local visibleSchool = voyage.revealed and school ~= nil
+		local visibleSchool = school ~= nil and school.discovered
+		local distance = WorldRule.distance(vessel.x, vessel.z, cell.x, cell.z)
+		if school ~= nil then
+			remainingSchools += 1
+			if not school.discovered
+				and (nearestHiddenDistance == nil or distance < nearestHiddenDistance)
+			then
+				nearestHidden = { x = cell.x, z = cell.z }
+				nearestHiddenDistance = distance
+			end
+			if school.discovered
+				and distance <= WorldRule.interactionRange()
+				and (nearbySchool == nil or distance < nearbySchool.distance)
+			then
+				nearbySchool = {
+					x = cell.x,
+					z = cell.z,
+					distance = distance,
+					species = school.species,
+					displayName = school.displayName,
+					rarity = school.rarity,
+					value = school.value,
+				}
+			end
+		end
 		table.insert(cells, {
 			x = cell.x,
 			z = cell.z,
 			isPort = cell.isPort,
-			ice = ice ~= nil,
+			ice = if ice ~= nil then ice.hardness else nil,
 			signal = if signal ~= nil then signal.kind else nil,
-			school = if visibleSchool then { stock = school.stock } else nil,
+			school = if visibleSchool
+				then {
+					stock = school.stock,
+					tier = school.tier,
+					species = school.species,
+					displayName = school.displayName,
+					rarity = school.rarity,
+					value = school.value,
+				}
+				else nil,
 		})
-		if visibleSchool then
-			target = { x = cell.x, z = cell.z, stock = school.stock }
-		end
 	end
 
+	local radarTarget = nil
+	local radarDistance = nil
+	local radarIntensity = 0
+	local radarDirection = nil
+	if nearestHidden ~= nil then
+		radarTarget = nearestHidden
+		radarDistance = assert(nearestHiddenDistance)
+		local bounds = WorldRule.bounds()
+		local maxDistance = (bounds.maxX - bounds.minX) + (bounds.maxZ - bounds.minZ)
+		radarIntensity = 1 - math.clamp(radarDistance / math.max(1, maxDistance), 0, 1)
+		radarDirection = WorldRule.direction(vessel.x, vessel.z, nearestHidden.x, nearestHidden.z)
+	end
+
+	local bounds = WorldRule.bounds()
 	return {
 		tick = stateRoot.tick,
 		mode = voyage.mode,
@@ -95,6 +151,11 @@ local function snapshot()
 		revealed = voyage.revealed,
 		message = voyage.message,
 		coins = economy.coins,
+		cargoUpgrade = {
+			cargoLevel = cargoUpgrade.cargoLevel,
+			maxCargoLevel = cargoUpgrade.maxCargoLevel,
+			nextCargoCost = cargoUpgrade.nextCargoCost,
+		},
 		vessel = {
 			x = vessel.x,
 			z = vessel.z,
@@ -107,7 +168,17 @@ local function snapshot()
 		hold = fishList(hold.fishIds),
 		collection = fishList(collection.fishIds),
 		cells = cells,
-		target = target,
+		bounds = bounds,
+		schoolsRemaining = remainingSchools,
+		target = radarTarget,
+		radar = {
+			target = radarTarget,
+			distance = radarDistance,
+			intensity = radarIntensity,
+			direction = radarDirection,
+			remaining = remainingSchools,
+		},
+		nearbySchool = nearbySchool,
 	}
 end
 

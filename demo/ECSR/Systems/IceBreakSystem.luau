@@ -26,7 +26,7 @@ return function(C, Contribution, WorldRule)
 				local payload = observation.payload
 				if observation.kind == "FishingCommand"
 					and payload.action == "Move"
-					and (voyage.mode == "Searching" or voyage.mode == "Returning")
+					and (voyage.mode == "Searching" or voyage.mode == "ReadyToReturn" or voyage.mode == "Returning")
 					and WorldRule.isValidStep(payload.dx, payload.dz)
 				then
 					local cellEntity = findCell(view, C, vessel.x + payload.dx, vessel.z + payload.dz)

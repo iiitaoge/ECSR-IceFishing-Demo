@@ -3,17 +3,19 @@
 local Application = script.Parent.Parent
 local ApplicationComponents = require(Application.Components)
 local CatalogRule = require(script.Parent.CatalogRule)
+local CargoUpgradeRule = require(script.Parent.CargoUpgradeRule)
 local InitialStateRule = require(script.Parent.InitialStateRule)
 local WorldRule = require(script.Parent.WorldRule)
 
 local RoundSystem = require(Application.Systems.RoundSystem)
-local ScanSystem = require(Application.Systems.ScanSystem)
 local ReturnSystem = require(Application.Systems.ReturnSystem)
 local IceBreakSystem = require(Application.Systems.IceBreakSystem)
 local NavigationSystem = require(Application.Systems.NavigationSystem)
 local ArrivalSystem = require(Application.Systems.ArrivalSystem)
+local DiscoverySystem = require(Application.Systems.DiscoverySystem)
 local FishingSystem = require(Application.Systems.FishingSystem)
 local SettlementSystem = require(Application.Systems.SettlementSystem)
+local CargoUpgradeSystem = require(Application.Systems.CargoUpgradeSystem)
 
 local GameRule = {}
 
@@ -26,14 +28,14 @@ function GameRule.new(Matter, ECSR)
 
 	local C = ApplicationComponents.define(Matter, ProtocolComponents)
 	local evolution = FrameworkRule.new(Matter, C, {
-		initial = InitialStateRule.create(C, WorldRule, 20260816),
+		initial = InitialStateRule.create(C, WorldRule, CargoUpgradeRule, 20260816),
 		phases = {
 			{
 				name = "intent",
 				systems = {
-					RoundSystem(C, Contribution, RandomRule, WorldRule),
-					ScanSystem(C, Contribution, WorldRule),
+					RoundSystem(C, Contribution, RandomRule, WorldRule, CatalogRule),
 					ReturnSystem(C, Contribution),
+					CargoUpgradeSystem(C, Contribution, CargoUpgradeRule),
 				},
 			},
 			{
@@ -49,8 +51,12 @@ function GameRule.new(Matter, ECSR)
 				systems = { ArrivalSystem(C, Contribution, WorldRule) },
 			},
 			{
+				name = "discovery",
+				systems = { DiscoverySystem(C, Contribution, WorldRule) },
+			},
+			{
 				name = "harvest",
-				systems = { FishingSystem(C, Contribution, RandomRule, CatalogRule) },
+				systems = { FishingSystem(C, Contribution, WorldRule) },
 			},
 			{
 				name = "settlement",
