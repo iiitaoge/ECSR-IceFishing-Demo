@@ -589,25 +589,36 @@ local function lineBetween(name: string, from: Vector3, to: Vector3, width: numb
 	return value
 end
 
-local function createOcean()
-	part("OceanDeep", Vector3.new(100, 2.5, 104), CFrame.new(0, -2.4, 30), Color3.fromRGB(15, 91, 128), Enum.Material.Glass, 0.08)
-	part("OceanSurface", Vector3.new(96, 0.18, 100), CFrame.new(0, -0.82, 30), Color3.fromRGB(39, 144, 178), Enum.Material.Glass, 0.28)
-	for index = 1, 14 do
-		local z = -4 + index * 5
+local function createOcean(bounds)
+	local columns = bounds.maxX - bounds.minX + 1
+	local rows = bounds.maxZ - bounds.minZ + 1
+	local centerX = (bounds.minX + bounds.maxX) * CELL_SIZE * 0.5
+	local centerZ = (bounds.minZ + bounds.maxZ) * CELL_SIZE * 0.5
+	local oceanWidth = columns * CELL_SIZE + 24
+	local oceanDepth = rows * CELL_SIZE + 24
+	part("OceanDeep", Vector3.new(oceanWidth, 2.5, oceanDepth), CFrame.new(centerX, -2.4, centerZ), Color3.fromRGB(15, 91, 128), Enum.Material.Glass, 0.08)
+	part("OceanSurface", Vector3.new(oceanWidth - 4, 0.18, oceanDepth - 4), CFrame.new(centerX, -0.82, centerZ), Color3.fromRGB(39, 144, 178), Enum.Material.Glass, 0.28)
+	local waveCount = math.max(14, rows * 2)
+	local waveStartZ = centerZ - oceanDepth * 0.5 + 7
+	local waveStep = (oceanDepth - 14) / (waveCount + 1)
+	for index = 1, waveCount do
+		local z = waveStartZ + index * waveStep
 		local wave = part(
 			"Wave",
-			Vector3.new(82 - (index % 3) * 7, 0.08, 0.22),
-			CFrame.new((index % 2) * 3 - 1.5, -0.58, z),
+			Vector3.new(oceanWidth - 22 - (index % 3) * 7, 0.08, 0.22),
+			CFrame.new(centerX + (index % 2) * 3 - 1.5, -0.58, z),
 			Color3.fromRGB(185, 235, 246),
 			Enum.Material.Neon,
 			0.72
 		)
 		table.insert(presentation.animated, { kind = "wave", part = wave, phase = index * 0.45 })
 	end
-	for index = 1, 8 do
+	local icebergCount = math.max(8, math.floor(rows * 0.9))
+	local icebergStep = (oceanDepth - 18) / (icebergCount + 1)
+	for index = 1, icebergCount do
 		local side = if index % 2 == 0 then -1 else 1
-		local x = side * (42 + (index % 3) * 4)
-		local z = index * 9 - 4
+		local x = centerX + side * (oceanWidth * 0.5 - 6 - (index % 3) * 1.8)
+		local z = centerZ - oceanDepth * 0.5 + 9 + index * icebergStep
 		part("DistantIce", Vector3.new(11 + index % 4, 4 + index % 3, 9), CFrame.new(x, 0.5, z) * CFrame.Angles(0, index * 0.41, 0), Color3.fromRGB(202, 231, 241), Enum.Material.Glacier)
 	end
 end
@@ -1243,7 +1254,7 @@ local function updateMiniMap(state)
 			child:Destroy()
 		end
 	end
-	local bounds = state.bounds or { minX = -4, maxX = 4, minZ = 0, maxZ = 8 }
+	local bounds = state.bounds or { minX = -5, maxX = 5, minZ = 0, maxZ = 10 }
 	local columns = bounds.maxX - bounds.minX + 1
 	local rows = bounds.maxZ - bounds.minZ + 1
 	local gap = 2
@@ -1450,7 +1461,7 @@ local function render(nextState)
 		child:Destroy()
 	end
 
-	createOcean()
+	createOcean(nextState.bounds or { minX = -5, maxX = 5, minZ = 0, maxZ = 10 })
 	createPort()
 	for _, cell in ipairs(nextState.cells) do
 		local base = worldPosition(cell.x, cell.z, -0.58)

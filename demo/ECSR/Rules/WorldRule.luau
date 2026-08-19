@@ -2,21 +2,21 @@
 
 local WorldRule = {}
 
-local MIN_X = -4
-local MAX_X = 4
+local MIN_X = -5
+local MAX_X = 5
 local MIN_Z = 0
-local MAX_Z = 8
+local MAX_Z = 10
 
 local FISHING_GROUNDS = table.freeze({
 	-- The first seven schools are available on a fresh boat, so the initial
 	-- 0/7 cargo HUD can be exercised in one expedition.
-	["-3:3"] = table.freeze({ stock = 1, depth = 1 }),
-	["2:3"] = table.freeze({ stock = 1, depth = 1 }),
+	["-4:3"] = table.freeze({ stock = 1, depth = 1 }),
+	["3:3"] = table.freeze({ stock = 1, depth = 1 }),
 	["-2:5"] = table.freeze({ stock = 1, depth = 1 }),
-	["1:5"] = table.freeze({ stock = 1, depth = 1 }),
-	["-4:7"] = table.freeze({ stock = 1, depth = 1 }),
-	["0:7"] = table.freeze({ stock = 1, depth = 1 }),
-	["3:6"] = table.freeze({ stock = 1, depth = 1 }),
+	["2:6"] = table.freeze({ stock = 1, depth = 1 }),
+	["4:7"] = table.freeze({ stock = 1, depth = 1 }),
+	["-5:8"] = table.freeze({ stock = 1, depth = 1 }),
+	["0:9"] = table.freeze({ stock = 1, depth = 1 }),
 })
 
 local function key(x: number, z: number): string

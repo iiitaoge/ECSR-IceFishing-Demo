@@ -5,6 +5,7 @@ local Matter = require(ReplicatedStorage.Packages.Matter)
 local ECSR = ReplicatedStorage.ECSR
 local GameRule = require(ReplicatedStorage.FishingDemo.Rules.GameRule)
 local CargoUpgradeRule = require(ReplicatedStorage.FishingDemo.Rules.CargoUpgradeRule)
+local WorldRule = require(ReplicatedStorage.FishingDemo.Rules.WorldRule)
 
 local application = GameRule.new(Matter, ECSR)
 local evolution = application.evolution
@@ -37,6 +38,13 @@ end
 local function schools()
 	return evolution:view():query(C.SeaCell, C.FishSchool)
 end
+
+local bounds = WorldRule.bounds()
+assert(
+	bounds.minX == -5 and bounds.maxX == 5 and bounds.minZ == 0 and bounds.maxZ == 10,
+	"the showcase sea map must expose the expanded 11x11 bounds"
+)
+assert(#evolution:view():query(C.SeaCell) == 121, "the expanded sea map must contain 121 SeaCells")
 
 local function navigateTo(x: number, z: number)
 	local moveCount = 0
