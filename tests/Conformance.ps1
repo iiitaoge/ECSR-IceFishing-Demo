@@ -69,6 +69,15 @@ if ($PresentationText -match 'FrameworkRule|StateUpdateRule|\b(?:world|_world):'
     Fail "presentation layer contains ECSR business authority"
 }
 
+$ServerAdapterPath = Join-Path $EcsrApp "Platform\FishingDemo.server.luau"
+$ServerAdapterText = Get-Content -Raw -LiteralPath $ServerAdapterPath
+if (-not $ServerAdapterText.Contains('Players.CharacterAutoLoads = false')) {
+    Fail "the vessel-only presentation must disable Roblox character auto-loading"
+}
+if (-not $ServerAdapterText.Contains('suppressCharacter(player)')) {
+    Fail "the platform adapter must remove an already-created character"
+}
+
 $EcsrStatus = git -C (Join-Path $Repository "vendor\ECSR") status --porcelain
 if ($LASTEXITCODE -ne 0) {
     Fail "unable to inspect the ECSR submodule"
