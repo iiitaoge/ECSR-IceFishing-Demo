@@ -3,6 +3,23 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- The player operates the vessel through UI/keyboard commands. A Roblox
+-- character would only duplicate the visual subject and obstruct the scene.
+Players.CharacterAutoLoads = false
+
+local function suppressCharacter(player: Player)
+	if player.Character ~= nil then
+		player.Character:Destroy()
+	end
+	player.CharacterAdded:Connect(function(character)
+		character:Destroy()
+	end)
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+	suppressCharacter(player)
+end
+
 local Matter = require(ReplicatedStorage.Packages.Matter)
 local ECSR = ReplicatedStorage.ECSR
 local FishingDemo = ReplicatedStorage.FishingDemo
@@ -212,6 +229,7 @@ commandEvent.OnServerEvent:Connect(function(player, action, payload)
 end)
 
 Players.PlayerAdded:Connect(function(player)
+	suppressCharacter(player)
 	task.defer(function()
 		if player.Parent ~= nil then
 			stateEvent:FireClient(player, snapshot())
